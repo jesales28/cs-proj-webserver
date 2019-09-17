@@ -1,5 +1,6 @@
 # Generated files
 *.o
+*.d
 *.pyc
 a.out
 

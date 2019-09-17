@@ -18,4 +18,6 @@ functional_test:
   script:
     - curl -OLs https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submission && python3 check_submission https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submissions.conf test
   when:  manual
+  artifacts:
+    expire_in: 2 weeks
 
