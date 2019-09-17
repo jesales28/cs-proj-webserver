@@ -7,7 +7,7 @@ minimum:
   tags:
     - clang7
   script:
-    - curl -OLs https://www.soe.ucsc.edu/~elm/cse130/fall19/testing/check_submission && python3 check_submission https://www.soe.ucsc.edu/~elm/cse130/fall19/testing/check_submissions.conf
+    - curl -OLs https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submission && python3 check_submission https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submissions.conf
   artifacts:
     expire_in: 1 week
 
@@ -16,6 +16,6 @@ functional_test:
   tags:
     - clang7
   script:
-    - curl -OLs https://www.soe.ucsc.edu/~elm/cse130/fall19/testing/check_submission && python3 check_submission https://www.soe.ucsc.edu/~elm/cse130/fall19/testing/check_submissions.conf test
+    - curl -OLs https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submission && python3 check_submission https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submissions.conf test
   when:  manual
 
