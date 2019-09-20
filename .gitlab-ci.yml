@@ -7,7 +7,7 @@ minimum:
   tags:
     - clang7
   script:
-    - curl -OLs https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submission && python3 check_submission https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submissions.conf
+    - curl -OLs https://teaching.ethanmiller.org/gitlab-testing/check_submission && python3 check_submission https://teaching.ethanmiller.org/cse130/fall19-02/check_submissions.toml
   artifacts:
     expire_in: 1 week
 
@@ -16,8 +16,6 @@ functional_test:
   tags:
     - clang7
   script:
-    - curl -OLs https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submission && python3 check_submission https://teaching.ethanmiller.org/cse130/fall19-02/testing_infrastructure/check_submissions.conf test
+    - curl -OLs https://teaching.ethanmiller.org/gitlab-testing/check_submission && python3 check_submission https://teaching.ethanmiller.org/cse130/fall19-02/check_submissions.toml test
   when:  manual
-  artifacts:
-    expire_in: 2 weeks
 
