@@ -32,7 +32,7 @@ int main (int argc, char *argv[]) {
         for(i = 1; i < argc; i++) {
             // error if no file is found
             // If a dash is just entered
-            if (*argv[1] == *dash) {
+            if (*argv[i] == *dash) {
                 in = read (STDIN_FILENO, stdin_buf, sizeof(stdin_buf));
                 while (in > 0) {                              // This takes in stdin
                     write (1, stdin_buf, sizeof(stdin_buf));  // from command line
