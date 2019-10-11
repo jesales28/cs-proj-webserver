@@ -14,6 +14,7 @@
 
 int main (int argc, char *argv[]) {
     int i, j, in;
+    const int buf_size = 32768;  
     char dash[] = "-";
     char stdin_buf[1];
     // This takes in stdin
@@ -32,7 +33,7 @@ int main (int argc, char *argv[]) {
         for(i = 1; i < argc; i++) {
             // error if no file is found
             // If a dash is just entered
-            if (*argv[i] == *dash) {
+            if (*argv[1] == *dash) {
                 in = read (STDIN_FILENO, stdin_buf, sizeof(stdin_buf));
                 while (in > 0) {                              // This takes in stdin
                     write (1, stdin_buf, sizeof(stdin_buf));  // from command line
@@ -58,6 +59,13 @@ int main (int argc, char *argv[]) {
                         if (file_in == -1){
                             warn ("%s", argv[i]);
                             exit (1);
+                        }
+                        else if (*argv[i] == *dash) {
+                            in = read (STDIN_FILENO, stdin_buf, sizeof(stdin_buf));
+                            while (in > 0) {                              // This takes in stdin
+                                write (1, stdin_buf, sizeof(stdin_buf));  // from command line
+                                in = read (STDIN_FILENO, stdin_buf, sizeof(stdin_buf));
+                            }
                         }
                         else {
                             write (1, file_buf, file_in);

@@ -1,3 +1,0 @@
-This is a text file
-If you can see this then that means
-the program has worked for test files!
