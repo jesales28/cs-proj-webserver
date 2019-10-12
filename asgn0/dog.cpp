@@ -63,8 +63,22 @@ int main (int argc, char *argv[]) {
                             warn ("%s", argv[i]);
                             exit (1);
                         }
+
+                            //while (file_in >= buf_size) {
+                                //file_in = read (file, file_in, buf_size);
+                                //write (1, file_in, buf_size);
+                            //}
+                            //file_buf[]; 
+                            //end = read(file, file_buf, buf_size + file_in);
+                            //printf ("%d\n", end);
+                            //if ()
                         // write the contents of a file
-                        else {  
+                        else { 
+                            while (file_in >= buf_size) {
+                                write (1, file_buf, file_in);
+                                file_in = read (file, file_buf, file_in);
+                                
+                            } 
                             write (1, file_buf, file_in); 
                         }
                     }
