@@ -101,7 +101,7 @@ int main (int argc, char *argv[]) {
             // If "/" then curl is called without target
             // Print 400 message because there is no target
             if (*header2 == *slash){
-                write(cl, bad_request, strlen(bad_request));
+                write(cl, &bad_request, strlen(bad_request));
                 sprintf(get_buff, "Content-length: 0\n");
                 write(cl, get_buff, strlen(get_buff));
             }
@@ -117,7 +117,7 @@ int main (int argc, char *argv[]) {
                 struct stat st;
                 stat(header2, &st);
                 content_len = st.st_size;
-                write(cl, ok, strlen(ok));
+                write(cl, &ok, strlen(ok));
                 sprintf(get_buff, "Content-length: %d\n", content_len);
                 write(cl, get_buff, strlen(get_buff));
                 // If handling a large file
@@ -128,7 +128,7 @@ int main (int argc, char *argv[]) {
                 write(cl, file_buff, file_fetch);
             }
             else {
-                write(cl, internal_server_error, strlen(internal_server_error));
+                write(cl, &internal_server_error, strlen(internal_server_error));
                 sprintf(get_buff, "Content-length: 0\n");
                 write(cl, get_buff, strlen(get_buff));
             }
@@ -141,7 +141,7 @@ int main (int argc, char *argv[]) {
             // Print 400 message because there is no target
             if (*header2 == *slash){
                 //printf("header2: %s\n", header2);
-                write(cl, forbidden, strlen(forbidden));
+                write(cl, &forbidden, strlen(forbidden));
                 sprintf(get_buff, "Content-length: 0\n");
                 write(cl, get_buff, strlen(get_buff));
             }
@@ -162,7 +162,7 @@ int main (int argc, char *argv[]) {
                             counter = counter - buf_size;
                         }
                     write(fd,file_buff, putread);
-                    write(cl, created, strlen(created));
+                    write(cl, &created, strlen(created));
                     sprintf(get_buff, "Content-length: 0\n");
                     write(cl, get_buff, strlen(get_buff));
                     close(fd);
@@ -193,7 +193,7 @@ int main (int argc, char *argv[]) {
                     } 
                     write(fd,file_buff, putread);
                     //printf("got to last write\n");
-                    write(cl, ok, strlen(ok));
+                    write(cl, &ok, strlen(ok));
                     sprintf(get_buff, "Content-length: 0\n");
                     write(cl, get_buff, strlen(get_buff));
                     //printf("create message done\n");
