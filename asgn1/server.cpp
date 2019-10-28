@@ -20,13 +20,13 @@ int main (int argc, char *argv[]) {
     int PORT_NUMBER = 8080;
     char SERVER_NAME_STRING[] = "localhost";
     // Status codes and messages
-    char *ok = "HTTP/1.1 200 OK\n";
-    char *created = "HTTP/1.1 201 Created\n";
-    char *bad_request = "HTTP/1.1 400 Bad request\n";
-    char *forbidden = "HTTP/1.1 403 Forbidden\n";
-    char *file_not_found = "HTTP/1.1 404 Not Found\n";
-    char *internal_server_error = "HTTP/1.1 500 Internal Server Error\n";
-    char *put_continue = "HTTP/1.1 100 Continue\n\n";
+    const char *ok = "HTTP/1.1 200 OK\n";
+    const char *created = "HTTP/1.1 201 Created\n";
+    const char *bad_request = "HTTP/1.1 400 Bad request\n";
+    const char *forbidden = "HTTP/1.1 403 Forbidden\n";
+    const char *file_not_found = "HTTP/1.1 404 Not Found\n";
+    const char *internal_server_error = "HTTP/1.1 500 Internal Server Error\n";
+    const char *put_continue = "HTTP/1.1 100 Continue\n\n";
 
     // Create sockaddr_in
     struct hostent *hent = gethostbyname(SERVER_NAME_STRING);
@@ -117,7 +117,7 @@ int main (int argc, char *argv[]) {
                 struct stat st;
                 stat(header2, &st);
                 content_len = st.st_size;
-                write(cl, &ok, strlen(ok));
+                write(cl, ok, strlen(ok));
                 sprintf(get_buff, "Content-length: %d\n", content_len);
                 write(cl, get_buff, strlen(get_buff));
                 // If handling a large file
@@ -128,7 +128,7 @@ int main (int argc, char *argv[]) {
                 write(cl, file_buff, file_fetch);
             }
             else {
-                write(cl, internal_server_error, strlen(internal_server_error));
+                write(cl, &internal_server_error, strlen(internal_server_error));
                 sprintf(get_buff, "Content-length: 0\n");
                 write(cl, get_buff, strlen(get_buff));
             }
@@ -141,7 +141,7 @@ int main (int argc, char *argv[]) {
             // Print 400 message because there is no target
             if (*header2 == *slash){
                 //printf("header2: %s\n", header2);
-                write(cl, forbidden, strlen(forbidden));
+                write(cl, &forbidden, strlen(forbidden));
                 sprintf(get_buff, "Content-length: 0\n");
                 write(cl, get_buff, strlen(get_buff));
             }
