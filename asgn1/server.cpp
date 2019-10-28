@@ -2,6 +2,7 @@
 // AUTHOR: Julia Sales
 // ID: jesales
 // DESCRIPTION: A simple http server
+// RESOURCES: piazza, stack overflow, class, man pages, and logic from asgn0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,7 +82,7 @@ int main (int argc, char *argv[]) {
         while (line != NULL) {
             //printf("DEBUG line: %s\n", line);
             // check for GET or PUT if first line in buffer 
-            if ( first_line == 1 ) {
+            if (first_line == 1) {
                 sscanf(line, "%s %s %s", header1, header2, header3);
                 //printf("DEBUG: 1:%s 2:%s 3:%s\n", header1, header2, header3);
                 first_line = 0;
@@ -134,8 +135,8 @@ int main (int argc, char *argv[]) {
             close(file);
             close(file_fetch);
         }
+
         if (*header1 == *put) {
-            int to_file;
             // If "/" then curl is called without target
             // Print 400 message because there is no target
             if (*header2 == *slash){
@@ -146,21 +147,41 @@ int main (int argc, char *argv[]) {
             }
             // If file does not exist, print 403 message
             else {
-                int fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 644);
+                int counter, putread;
+                int fd = open(header2, O_RDWR | O_TRUNC, 0664);
+                // If file does not exist, create it and print 201 message
                 if (fd == -1) {
-                    // fail to open file for creation
-                    write(cl, bad_request, strlen(bad_request));
+                    close(fd);
+                    fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
+                    write(cl , put_continue , strlen(put_continue));
+                    putread = read(cl, file_buff, content_len);
+                    counter = content_len;
+                     while(counter >= buf_size) {
+                            write(fd, file_buff, putread);
+                            putread = read(cl, file_buff, putread);
+                            counter = counter - buf_size;
+                        }
+                    write(fd,file_buff, putread);
+                    write(cl, created, strlen(created));
                     sprintf(get_buff, "Content-length: 0\n");
                     write(cl, get_buff, strlen(get_buff));
+                    close(fd);
+                    // fail to open file for creation
+                    /*write(cl, bad_request, strlen(bad_request));
+                    sprintf(get_buff, "Content-length: 0\n");
+                    write(cl, get_buff, strlen(get_buff));
+                    close(fd);*/
                 }
-                // If file exists is over written or written too
+                // If file exists, over write it and print 200 message
                 else {
+                    //close(fd);
+                    //int fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
                     int write_to_file;
+                    //printf("new file\n");
                     write(cl , put_continue , strlen(put_continue));
-                    int putread = read(cl, file_buff, buf_size);
-                    //printf("putread: %d\n",putread);
-                    int counter = content_len;
-                    //printf("DEBUG: file_buff = %s\n", file_buff);
+                    putread = read(cl, file_buff, buf_size);
+                    counter = content_len;
+                        //printf("DEBUG: file_buff = %s\n", file_buff);
                     while(counter >= buf_size) {
                         write(fd, file_buff, putread);
                         putread = read(cl, file_buff, putread);
@@ -169,13 +190,13 @@ int main (int argc, char *argv[]) {
                         //printf("loop\n");
                         //printf("putread: %d\n",putread);
                         //printf("counter: %d\n", counter);
-                    }
-                    //printf("DEBUG: file_buff = %s\n", file_buff);
-                    //printf("out of loop\n");
+                    } 
                     write(fd,file_buff, putread);
-                    write(cl, created, strlen(created));
+                    //printf("got to last write\n");
+                    write(cl, ok, strlen(ok));
                     sprintf(get_buff, "Content-length: 0\n");
                     write(cl, get_buff, strlen(get_buff));
+                    //printf("create message done\n");
                     close(fd);
                 }
             }
@@ -185,25 +206,5 @@ int main (int argc, char *argv[]) {
         close(cl);
     }
 
-/*if (*header1 == *put) {
-            sprintf(buffer, "got PUT\n");
-            write(cl , put_continue , strlen(put_continue));
-            int putread = read(cl, put_buff, buf_size);
-            printf("DEBUG: put_buff = %s\n", put_buff);
-
-            // if file doesn't exist: create new file named: header2 with put_buff
-            //   if create file error, return 403 forbidden
-            //    else write(cl, created, strlen(created))
-            // else if file exists overrite it
-            //   if overrite error, return 403 forbidden 
-            //    else write(cl, created, strlen(created))
-            // else return a 500 server error
-
-            write(cl , created , strlen(created));
-
-       }*/
-
-
     return 0;
-
 }
