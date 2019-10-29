@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
         PORT_NUMBER = atoi(argv[2]);
     }
     // Status codes and messages
-    char *ok = 
+    const char *ok = 
         "HTTP/1.1 200 OK\nContent-length: 0\r\n\r\n";
     const char *created = 
         "HTTP/1.1 201 Created\nContent-length: 0\r\n\r\n";
@@ -76,9 +76,7 @@ int main (int argc, char *argv[]) {
     listen(sock, 0);
 
     const int buf_size = 32768;
-    printf("------------------started server-------------------\n");
     while (1){
-        printf("------------------waiting for connection-------------------\n");
         int cl = accept(sock, NULL, NULL);
         if (cl<0) {
             perror("In accept");
@@ -103,7 +101,6 @@ int main (int argc, char *argv[]) {
         char * line = strtok(strdup(buffer), "\n");
         int first_line = 1;
         while (line != NULL) {
-            printf("DEBUG line: %s\n", line);
             // check for GET or PUT if first line in buffer 
             if (first_line == 1) {
                 sscanf(line, "%s %s %s", header1, header2, header3);
@@ -222,7 +219,6 @@ int main (int argc, char *argv[]) {
                 }
             }
         }
-        printf("---------------------message sent----------------------\n");
         close(cl);
     }
     return 0;
