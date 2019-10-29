@@ -19,16 +19,37 @@
 #include <sys/stat.h>
 
 int main (int argc, char *argv[]) {
-    int PORT_NUMBER = 8080;
-    char SERVER_NAME_STRING[] = "localhost";
+    int PORT_NUMBER;
+    char *SERVER_NAME_STRING;
+    if (argv[1] == NULL) {
+        fprintf(stderr, "Request is missing required `Host` header\n");
+        exit (1);
+    }
+    else {
+        SERVER_NAME_STRING = argv[1];
+    }
+    if(argv[2] == NULL){
+        fprintf(stderr, "Request is missing required `Port` header\n");
+        exit(1);
+    }
+    else{
+        PORT_NUMBER = atoi(argv[2]);
+    }
     // Status codes and messages
-    const char *ok = "HTTP/1.1 200 OK\n";
-    const char *created = "HTTP/1.1 201 Created\n";
-    const char *bad_request = "HTTP/1.1 400 Bad Request\n";
-    const char *forbidden = "HTTP/1.1 403 Forbidden\n";
-    const char *file_not_found = "HTTP/1.1 404 Not Found\n";
-    const char *internal_server_error = "HTTP/1.1 500 Internal Server Error\n";
-    const char *put_continue = "HTTP/1.1 100 Continue\n\n";
+    char *ok = 
+        "HTTP/1.1 200 OK\nContent-length: 0\r\n\r\n";
+    const char *created = 
+        "HTTP/1.1 201 Created\nContent-length: 0\r\n\r\n";
+    const char *bad_request = 
+        "HTTP/1.1 400 Bad Request\nContent-length: 0\r\n\r\n";
+    const char *forbidden = 
+        "HTTP/1.1 403 Forbidden\nContent-length: 0\r\n\r\n";
+    const char *file_not_found = 
+        "HTTP/1.1 404 Not Found\nContent-length: 0\r\n\r\n";
+    const char *internal_server_error = 
+        "HTTP/1.1 500 Internal Server Error\nContent-length: 0\r\n";
+    const char *put_continue = 
+        "HTTP/1.1 100 Continue\n\n";
 
     // Create sockaddr_in
     struct hostent *hent = gethostbyname(SERVER_NAME_STRING);
@@ -55,8 +76,9 @@ int main (int argc, char *argv[]) {
     listen(sock, 0);
 
     const int buf_size = 32768;
-    
+    printf("------------------started server-------------------\n");
     while (1){
+        printf("------------------waiting for connection-------------------\n");
         int cl = accept(sock, NULL, NULL);
         if (cl<0) {
             perror("In accept");
@@ -81,6 +103,7 @@ int main (int argc, char *argv[]) {
         char * line = strtok(strdup(buffer), "\n");
         int first_line = 1;
         while (line != NULL) {
+            printf("DEBUG line: %s\n", line);
             // check for GET or PUT if first line in buffer 
             if (first_line == 1) {
                 sscanf(line, "%s %s %s", header1, header2, header3);
@@ -98,15 +121,13 @@ int main (int argc, char *argv[]) {
             // Print 403 message because "/" are not allowed
             if (strstr(header2, slash) != NULL){
                 write(cl, forbidden, strlen(forbidden));
-                sprintf(get_buff, "Content-length: 0\n");
+                sprintf(get_buff, "Content-length: 0\r\n");
                 write(cl, get_buff, strlen(get_buff));
             }
             // If target file name if not 27 ascii characters
             // Print 400 error message
-            else if (strlen(&header2[0]) != 28){
+            else if (strlen(&header2[0]) != 27){
                 write(cl, bad_request, strlen(bad_request));
-                sprintf(get_buff, "Content-length: 0\n");
-                write(cl, get_buff, strlen(get_buff));
             }
             else {
                 // If file is not found, print 404 error message
@@ -114,8 +135,6 @@ int main (int argc, char *argv[]) {
                 int file = open(header2, O_RDONLY);
                 if (file == -1){
                     write(cl, file_not_found, strlen(file_not_found));
-                    sprintf(get_buff, "Content-length: 0\n");
-                    write(cl, get_buff, strlen(get_buff));
                 }
                 // If file is found, print 200 message
                 else if (file != -1) {
@@ -123,8 +142,9 @@ int main (int argc, char *argv[]) {
                     struct stat st;
                     stat(header2, &st);
                     content_len = st.st_size;
-                    write(cl, ok, strlen(ok));
-                    sprintf(get_buff, "Content-length: %d\n", content_len);
+                    sprintf(get_buff, 
+                        "HTTP/1.1 200 OK\nContent-length: %d\r\n\r\n",
+                        content_len);
                     write(cl, get_buff, strlen(get_buff));
                     // If handling a large file
                     while (file_fetch >= buf_size) {
@@ -136,8 +156,6 @@ int main (int argc, char *argv[]) {
                 else {
                     write(cl, &internal_server_error, 
                         strlen(internal_server_error));
-                    sprintf(get_buff, "Content-length: 0\n");
-                    write(cl, get_buff, strlen(get_buff));
                 }
                 close(file);
                 close(file_fetch);
@@ -149,15 +167,11 @@ int main (int argc, char *argv[]) {
             // Print 403 message because "/" are not allowed
             if (strstr(header2, slash) != NULL){
                 write(cl, forbidden, strlen(forbidden));
-                sprintf(get_buff, "Content-length: 0\n");
-                write(cl, get_buff, strlen(get_buff));
             }
             // If target file name if not 27 ascii characters
             // Print 400 error message
-            else if (strlen(&header2[1]) != 27){
+            else if (strlen(&header2[1]) != 26){
                 write(cl, bad_request, strlen(bad_request));
-                sprintf(get_buff, "Content-length: 0\n");
-                write(cl, get_buff, strlen(get_buff));
             }
             else {
                 int counter, putread;
@@ -180,8 +194,6 @@ int main (int argc, char *argv[]) {
                     }
                     write(fd,file_buff, putread);
                     write(cl, created, strlen(created));
-                    sprintf(get_buff, "Content-length: 0\n");
-                    write(cl, get_buff, strlen(get_buff));
                     close(fd);
                 }
                 // If file exists, over write it and print 200 message
@@ -191,6 +203,7 @@ int main (int argc, char *argv[]) {
                     write(cl , put_continue , strlen(put_continue));
                     putread = read(cl, file_buff, buf_size);
                     counter = content_len;
+                    // deals with large files
                     if(counter >= buf_size){
                         write(fd,file_buff, putread);
                         while(counter >= buf_size) {
@@ -201,18 +214,15 @@ int main (int argc, char *argv[]) {
                     }
                     write(fd,file_buff, putread);
                     write(cl, ok, strlen(ok));
-                    sprintf(get_buff, "Content-length: 0\n");
-                    write(cl, get_buff, strlen(get_buff));
                     close(fd);
                 }
                 else {
                     write(cl, &internal_server_error, 
                         strlen(internal_server_error));
-                    sprintf(get_buff, "Content-length: 0\n");
-                    write(cl, get_buff, strlen(get_buff));
                 }
             }
         }
+        printf("---------------------message sent----------------------\n");
         close(cl);
     }
     return 0;
