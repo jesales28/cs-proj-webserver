@@ -24,7 +24,7 @@ int main (int argc, char *argv[]) {
     // Status codes and messages
     const char *ok = "HTTP/1.1 200 OK\n";
     const char *created = "HTTP/1.1 201 Created\n";
-    const char *bad_request = "HTTP/1.1 400 Bad request\n";
+    const char *bad_request = "HTTP/1.1 400 Bad Request\n";
     const char *forbidden = "HTTP/1.1 403 Forbidden\n";
     const char *file_not_found = "HTTP/1.1 404 Not Found\n";
     const char *internal_server_error = "HTTP/1.1 500 Internal Server Error\n";
@@ -55,9 +55,8 @@ int main (int argc, char *argv[]) {
     listen(sock, 0);
 
     const int buf_size = 32768;
-    //printf("------------------started server-------------------\n");
+    
     while (1){
-        //printf("------------------waiting for connection-------------------\n");
         int cl = accept(sock, NULL, NULL);
         if (cl<0) {
             perror("In accept");
@@ -82,78 +81,111 @@ int main (int argc, char *argv[]) {
         char * line = strtok(strdup(buffer), "\n");
         int first_line = 1;
         while (line != NULL) {
-            //printf("DEBUG line: %s\n", line);
             // check for GET or PUT if first line in buffer 
             if (first_line == 1) {
                 sscanf(line, "%s %s %s", header1, header2, header3);
-                //printf("DEBUG: 1:%s 2:%s 3:%s\n", header1, header2, header3);
                 first_line = 0;
             }
             if (strncmp(line, "Content-Length:", 15) == 0) {
                 sscanf(line, "%s %d", header4, &content_len);
-                //printf("line: %s %d\n", header4, content_len);
             } 
             // add other parsers here
             line = strtok(NULL, "\n");
         }
-
+        // GET
         if (*header1 == *get) {
-            int file_fetch;
-            int file = open(header2, O_RDONLY);
             // If "/" then curl is called without target
-            // Print 400 message because there is no target
-            if (*header2 == *slash){
+            // Print 403 message because "/" are not allowed
+            if (strstr(header2, slash) != NULL){
+                write(cl, forbidden, strlen(forbidden));
+                sprintf(get_buff, "Content-length: 0\n");
+                write(cl, get_buff, strlen(get_buff));
+            }
+            // If target file name if not 27 ascii characters
+            // Print 400 error message
+            else if (strlen(&header2[0]) != 28){
                 write(cl, bad_request, strlen(bad_request));
                 sprintf(get_buff, "Content-length: 0\n");
                 write(cl, get_buff, strlen(get_buff));
             }
-            // If file is not found, print 404 error message
-            else if (file == -1){
-                write(cl, file_not_found, strlen(file_not_found));
-                sprintf(get_buff, "Content-length: 0\n");
-                write(cl, get_buff, strlen(get_buff));
-            }
-            // If file is found, print 200 message
-            else if (file != -1) {
-                file_fetch = read(file, file_buff, buf_size);
-                struct stat st;
-                stat(header2, &st);
-                content_len = st.st_size;
-                write(cl, ok, strlen(ok));
-                sprintf(get_buff, "Content-length: %d\n", content_len);
-                write(cl, get_buff, strlen(get_buff));
-                // If handling a large file
-                while (file_fetch >= buf_size) {
-                    write(cl, file_buff, file_fetch);
-                    file_fetch = read(file, file_buff, file_fetch);
-                }
-                write(cl, file_buff, file_fetch);
-            }
             else {
-                write(cl, &internal_server_error, strlen(internal_server_error));
-                sprintf(get_buff, "Content-length: 0\n");
-                write(cl, get_buff, strlen(get_buff));
+                // If file is not found, print 404 error message
+                int file_fetch;
+                int file = open(header2, O_RDONLY);
+                if (file == -1){
+                    write(cl, file_not_found, strlen(file_not_found));
+                    sprintf(get_buff, "Content-length: 0\n");
+                    write(cl, get_buff, strlen(get_buff));
+                }
+                // If file is found, print 200 message
+                else if (file != -1) {
+                    file_fetch = read(file, file_buff, buf_size);
+                    struct stat st;
+                    stat(header2, &st);
+                    content_len = st.st_size;
+                    write(cl, ok, strlen(ok));
+                    sprintf(get_buff, "Content-length: %d\n", content_len);
+                    write(cl, get_buff, strlen(get_buff));
+                    // If handling a large file
+                    while (file_fetch >= buf_size) {
+                        write(cl, file_buff, file_fetch);
+                        file_fetch = read(file, file_buff, file_fetch);
+                    }
+                    write(cl, file_buff, file_fetch);
+                }
+                else {
+                    write(cl, &internal_server_error, 
+                        strlen(internal_server_error));
+                    sprintf(get_buff, "Content-length: 0\n");
+                    write(cl, get_buff, strlen(get_buff));
+                }
+                close(file);
+                close(file_fetch);
             }
-            close(file);
-            close(file_fetch);
         }
-
+        // PUT
         if (*header1 == *put) {
             // If "/" then curl is called without target
-            // Print 400 message because there is no target
-            if (*header2 == *slash){
-                //printf("header2: %s\n", header2);
-                write(cl, &forbidden, strlen(forbidden));
+            // Print 403 message because "/" are not allowed
+            if (strstr(header2, slash) != NULL){
+                write(cl, forbidden, strlen(forbidden));
                 sprintf(get_buff, "Content-length: 0\n");
                 write(cl, get_buff, strlen(get_buff));
             }
-            // If file does not exist, print 403 message
+            // If target file name if not 27 ascii characters
+            // Print 400 error message
+            else if (strlen(&header2[1]) != 27){
+                write(cl, bad_request, strlen(bad_request));
+                sprintf(get_buff, "Content-length: 0\n");
+                write(cl, get_buff, strlen(get_buff));
+            }
             else {
                 int counter, putread;
                 int fd = open(header2, O_RDWR | O_TRUNC, 0664);
                 // If file does not exist, create it and print 201 message
-                //printf("fd= %d\n", fd);
                 if (fd == -1) {
+                    close(fd);
+                    fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
+                    write(cl , put_continue , strlen(put_continue));
+                    putread = read(cl, file_buff, buf_size);
+                    counter = content_len;
+                    // Handling large files
+                    if(counter >= buf_size){
+                        write(fd,file_buff, putread);
+                        while(counter >= buf_size) {
+                            write(fd, file_buff, putread);
+                            counter = counter - buf_size;
+                            putread = read(cl, file_buff, putread);
+                        }
+                    }
+                    write(fd,file_buff, putread);
+                    write(cl, created, strlen(created));
+                    sprintf(get_buff, "Content-length: 0\n");
+                    write(cl, get_buff, strlen(get_buff));
+                    close(fd);
+                }
+                // If file exists, over write it and print 200 message
+                else if (fd != -1) {
                     close(fd);
                     fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
                     write(cl , put_continue , strlen(put_continue));
@@ -168,48 +200,20 @@ int main (int argc, char *argv[]) {
                         }
                     }
                     write(fd,file_buff, putread);
-                    write(cl, created, strlen(created));
-                    sprintf(get_buff, "Content-length: 0\n");
-                    write(cl, get_buff, strlen(get_buff));
-                    close(fd);
-                    // fail to open file for creation
-                    /*write(cl, bad_request, strlen(bad_request));
-                    sprintf(get_buff, "Content-length: 0\n");
-                    write(cl, get_buff, strlen(get_buff));
-                    close(fd);*/
-                }
-                // If file exists, over write it and print 200 message
-                else {
-                    close(fd);
-                    int fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
-                    //printf("new file\n");
-                    write(cl , put_continue , strlen(put_continue));
-                    putread = read(cl, file_buff, buf_size);
-                    counter = content_len;
-                    if(counter >= buf_size){
-                        //printf("counter = %d\n", counter);
-                        write(fd,file_buff, putread);
-                        while(counter >= buf_size) {
-                            write(fd, file_buff, putread);
-                            counter = counter - buf_size;
-                            //printf("counter = %d\n", counter);
-                            putread = read(cl, file_buff, putread);
-                        }
-                    }
-                    write(fd,file_buff, putread);
-                    //printf("got to last write\n");
                     write(cl, ok, strlen(ok));
                     sprintf(get_buff, "Content-length: 0\n");
                     write(cl, get_buff, strlen(get_buff));
-                    //printf("create message done\n");
                     close(fd);
+                }
+                else {
+                    write(cl, &internal_server_error, 
+                        strlen(internal_server_error));
+                    sprintf(get_buff, "Content-length: 0\n");
+                    write(cl, get_buff, strlen(get_buff));
                 }
             }
         }
-
-        //printf("---------------------message sent----------------------\n");
         close(cl);
     }
-
     return 0;
 }
