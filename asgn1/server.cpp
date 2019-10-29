@@ -3,6 +3,8 @@
 // ID: jesales
 // DESCRIPTION: A simple http server
 // RESOURCES: piazza, stack overflow, class, man pages, and logic from asgn0
+// as well as referenced medium.com <- helped with setting up the socket
+// it was also similar/same code from section.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,17 +152,21 @@ int main (int argc, char *argv[]) {
                 int counter, putread;
                 int fd = open(header2, O_RDWR | O_TRUNC, 0664);
                 // If file does not exist, create it and print 201 message
+                //printf("fd= %d\n", fd);
                 if (fd == -1) {
                     close(fd);
                     fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
                     write(cl , put_continue , strlen(put_continue));
-                    putread = read(cl, file_buff, content_len);
+                    putread = read(cl, file_buff, buf_size);
                     counter = content_len;
-                     while(counter >= buf_size) {
+                    if(counter >= buf_size){
+                        write(fd,file_buff, putread);
+                        while(counter >= buf_size) {
                             write(fd, file_buff, putread);
-                            putread = read(cl, file_buff, putread);
                             counter = counter - buf_size;
+                            putread = read(cl, file_buff, putread);
                         }
+                    }
                     write(fd,file_buff, putread);
                     write(cl, created, strlen(created));
                     sprintf(get_buff, "Content-length: 0\n");
@@ -174,23 +180,22 @@ int main (int argc, char *argv[]) {
                 }
                 // If file exists, over write it and print 200 message
                 else {
-                    //close(fd);
-                    //int fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
-                    int write_to_file;
+                    close(fd);
+                    int fd = open(header2, O_RDWR | O_CREAT | O_TRUNC, 0664);
                     //printf("new file\n");
                     write(cl , put_continue , strlen(put_continue));
                     putread = read(cl, file_buff, buf_size);
                     counter = content_len;
-                        //printf("DEBUG: file_buff = %s\n", file_buff);
-                    while(counter >= buf_size) {
-                        write(fd, file_buff, putread);
-                        putread = read(cl, file_buff, putread);
-                        counter = counter - buf_size;
-                        //printf("DEBUG: file_buff = %s\n", file_buff);
-                        //printf("loop\n");
-                        //printf("putread: %d\n",putread);
-                        //printf("counter: %d\n", counter);
-                    } 
+                    if(counter >= buf_size){
+                        //printf("counter = %d\n", counter);
+                        write(fd,file_buff, putread);
+                        while(counter >= buf_size) {
+                            write(fd, file_buff, putread);
+                            counter = counter - buf_size;
+                            //printf("counter = %d\n", counter);
+                            putread = read(cl, file_buff, putread);
+                        }
+                    }
                     write(fd,file_buff, putread);
                     //printf("got to last write\n");
                     write(cl, ok, strlen(ok));
