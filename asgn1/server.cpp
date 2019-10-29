@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
         PORT_NUMBER = atoi(argv[2]);
     }
     // Status codes and messages
-    const char *ok = 
+    char *ok = 
         "HTTP/1.1 200 OK\nContent-length: 0\r\n\r\n";
     const char *created = 
         "HTTP/1.1 201 Created\nContent-length: 0\r\n\r\n";
@@ -183,7 +183,7 @@ int main (int argc, char *argv[]) {
                     // Handling large files
                     if(counter >= buf_size){
                         write(fd,file_buff, putread);
-                        while(counter >= buf_size) {
+                        while(counter >= putread) {
                             write(fd, file_buff, putread);
                             counter = counter - buf_size;
                             putread = read(cl, file_buff, putread);
@@ -203,7 +203,7 @@ int main (int argc, char *argv[]) {
                     // deals with large files
                     if(counter >= buf_size){
                         write(fd,file_buff, putread);
-                        while(counter >= buf_size) {
+                        while(counter >= putread) {
                             write(fd, file_buff, putread);
                             counter = counter - buf_size;
                             putread = read(cl, file_buff, putread);
