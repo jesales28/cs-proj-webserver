@@ -181,12 +181,12 @@ int main (int argc, char *argv[]) {
                     putread = read(cl, file_buff, buf_size);
                     counter = content_len;
                     // Handling large files
-                    if(counter >= buf_size){
-                        write(fd,file_buff, putread);
-                        while(counter >= putread) {
-                            write(fd, file_buff, putread);
-                            counter = counter - buf_size;
-                            putread = read(cl, file_buff, putread);
+                    if(content_len >= buf_size) {
+                        write(fd, file_buff, putread);
+                        while(putread > 0 && counter >= putread) {
+                        write(fd, file_buff, putread);
+                        counter = counter - buf_size;
+                        putread = read(cl, file_buff, putread);
                         }
                     }
                     write(fd,file_buff, putread);
@@ -201,12 +201,11 @@ int main (int argc, char *argv[]) {
                     putread = read(cl, file_buff, buf_size);
                     counter = content_len;
                     // deals with large files
-                    if(counter >= buf_size){
-                        write(fd,file_buff, putread);
-                        while(counter >= putread) {
-                            write(fd, file_buff, putread);
-                            counter = counter - buf_size;
-                            putread = read(cl, file_buff, putread);
+                    if(content_len >= buf_size) {
+                        while(putread > 0 && counter >= putread) {
+                        write(fd, file_buff, putread);
+                        counter = counter - buf_size;
+                        putread = read(cl, file_buff, putread);
                         }
                     }
                     write(fd,file_buff, putread);
