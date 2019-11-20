@@ -51,7 +51,7 @@ char slash[] = "/";
 char expect[] = "Expect: 100-continue";
 int content_len = 0;
 int content_len2 = 0;
-int valread; 
+int valread, cl; 
 size_t  size = 0;
 size_t  buf_used = 0;
 
@@ -59,9 +59,10 @@ size_t  buf_used = 0;
 pthread_mutex_t mutex;
 pthread_cond_t full;
 pthread_cond_t empty;
+pthread_cond_t cl_req;
 // variables going to be used for multithreading
 const int n = 16000;
-char request_buff[n];
+char request_buff[n] = {0};
 int n_available[n] = {0};
 int n_in_use = 0;
 int waiting_threads = 0;
@@ -78,7 +79,7 @@ char* substring(const char* str, size_t begin, size_t len)
     return strndup(str + begin, len);
 }
 
-/*-----------------------------  GET FUNCTION  -------------------------------*/
+/*----------------------------  GET FUNCTION  --------------------------------*/
 
 int *get_function(int cl, const char *target) {
     // If file is not found, print 404 error message
@@ -150,6 +151,7 @@ int *put_function(int cl, int fd, int putread, int bytes_left,
 /*----------------------------  PARSE FUNCTION  ------------------------------*/
 
 int *parse(int cl, char buffer) {
+    //printf("got here\n");
     //5********
     // try with strchr from 
     // https://stackoverflow.com
@@ -285,19 +287,31 @@ int *parse(int cl, char buffer) {
 
 /*----------------------------  QUEUE FUNCTION  ------------------------------*/
 
-void *queue(int cl, char buffer[]){
+void *queue(int cl, char buffer1[]){
     int in = 0;
     while(1){
         pthread_mutex_lock(&mutex);
         if (n_in_use == n){
             pthread_cond_wait(&empty, &mutex);
         }
-        while (&request_buff[in] != NULL) {
+        //if (&request_buff[in] == NULL) {
+            //memmove(&request_buff[in], buffer1, strlen(buffer1));
+            //printf("%s", &request_buff[in]);
+        //     printf("%s", &request_buff[in]);
+        //     n_in_use += 1;
+        //     for (int i=0; i < waiting_threads; i++){
+        //         pthread_cond_signal(&full);
+        //     }
+        //}
+        if (&request_buff[in] != NULL) {
             in = (in + 1) % n;
         }
-        request_buff[in] = *buffer;
+        printf("%d\n", in);
+        memmove(&request_buff[in], buffer1, strlen(buffer1));
+        printf("%s", &request_buff[in]);
         n_in_use += 1;
-        for (int i=0; i < waiting_threads; i++){
+        //pthread_cond_wait(&cl_req, &mutex);
+        for (int i=1; i < waiting_threads; i++){
             pthread_cond_signal(&full);
         }
         pthread_mutex_unlock(&mutex);
@@ -322,11 +336,14 @@ void *dispatcher(void *args){
             out = (out + 1) % n;
         }
         *thrd_ptr = request_buff[out];
+        // while (thrd_ptr != NULL){
+        //parse(cl, *thrd_ptr);
+        // }
         n_in_use -= 1;
-        pthread_cond_wait(&empty, &mutex);
+        pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
-    return NULL;
+    return 0;
 }
 
 /*----------------------------------  MAIN  ----------------------------------*/
@@ -407,7 +424,7 @@ int main (int argc, char *argv[]) {
     //int open_socket = 1;
 
     while (1){
-        int cl = accept(sock, NULL, NULL);
+        cl = accept(sock, NULL, NULL);
         if (cl<0) {
             perror("In accept");
             exit(EXIT_FAILURE);
@@ -431,10 +448,19 @@ int main (int argc, char *argv[]) {
         char line_buffer[256];
        
         size_t  index = 0;
+        //pthread_cond_signal(&cl_req);
 
-        printf("DEBUG: size of original buffer: %lu\n", strlen(buffer));
-            parse(cl, *buffer);
-            close(cl);
+        //printf("DEBUG: size of original buffer: %lu\n", strlen(buffer));
+        //printf("%s\n", buffer);
+        queue(cl, buffer);
+        //parse(cl, *buffer);
+        close(cl);
     }
+    int j = 0;
+    while (j < nthread){
+        pthread_join(tid[j], NULL);
+        j++;
+    }
+    pthread_mutex_destroy(&mutex);
     return 0;
 }
