@@ -66,6 +66,7 @@ char request_buff[n] = {0};
 int n_available[n] = {0};
 int n_in_use = 0;
 int waiting_threads = 0;
+int req_written;
 
 
 // from https://www.linuxquestions.org/questions/programming-9/extract-substring-from-string-in-c-432620/
@@ -303,17 +304,32 @@ void *queue(int cl, char buffer1[]){
         //         pthread_cond_signal(&full);
         //     }
         //}
-        if (&request_buff[in] != NULL) {
-            in = (in + 1) % n;
+        // printf("%s\n", &request_buff[0]);
+        while (req_written == 0){
+            if (request_buff[in] != NULL) {
+                printf("in here\n");
+                in = (in + 1) % n;
+            }
+            //printf("%d\n%s\n", in, &request_buff[in]);
+            memmove(&request_buff[in], buffer1, strlen(buffer1));
+            printf("%d\n%s\n", in, &request_buff[in]);
+            n_in_use += 1;
+            for (int i=0; i < waiting_threads; i++){
+                pthread_cond_signal(&full);
+            }
+            req_written = 1;
         }
-        printf("%d\n", in);
-        memmove(&request_buff[in], buffer1, strlen(buffer1));
-        printf("%s", &request_buff[in]);
-        n_in_use += 1;
+        //printf("%d\n", in);
+        //printf("%d\n%s\n", in, &request_buff[in]);
+        // if (&request_buff[in] != NULL) {
+        //     in = (in + 1) % n;
+        // }
+        // memmove(&request_buff[in], buffer1, strlen(buffer1));
+        // n_in_use += 1;
         //pthread_cond_wait(&cl_req, &mutex);
-        for (int i=1; i < waiting_threads; i++){
-            pthread_cond_signal(&full);
-        }
+        // for (int i=1; i < waiting_threads; i++){
+        //     pthread_cond_signal(&full);
+        // }
         pthread_mutex_unlock(&mutex);
     }
 }
@@ -452,7 +468,10 @@ int main (int argc, char *argv[]) {
 
         //printf("DEBUG: size of original buffer: %lu\n", strlen(buffer));
         //printf("%s\n", buffer);
-        queue(cl, buffer);
+        req_written = 0;
+        if (req_written == 0){
+           queue(cl, buffer); 
+        }
         //parse(cl, *buffer);
         close(cl);
     }
