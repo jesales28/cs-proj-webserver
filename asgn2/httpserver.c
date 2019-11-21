@@ -357,7 +357,7 @@ void *queue(int cl){
 
 void *dispatcher(void *args){
     int out = 0;
-    char *thrd_ptr = (char *)args;
+    int *thrd_ptr = (int *)args;
     while(1){
         pthread_mutex_lock(&mutex);
         if (req_avail == 0){
@@ -409,8 +409,13 @@ int main (int argc, char *argv[]) {
         fprintf(stderr, "Request is missing required `worker thread` header\n");
         exit (1);
     }
+    if(argv[2] == NULL) {
+        nthread = 4;
+    }
     else {
         nthread = atoi(argv[2]);
+        if (nthread < 4)
+        fprintf(stderr, "Must have 4 or more threads\n");
     }
     if (argv[4] == NULL) {
         fprintf(stderr, "Request is missing required `log file` header\n");
