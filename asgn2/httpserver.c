@@ -21,6 +21,8 @@
 #include <semaphore.h>
 #include <errno.h>
 
+#define buf_size 16000
+
 // Status codes and messages
 const char *ok = 
     "HTTP/1.1 200 OK\nContent-length: 0\r\n\r\n";
@@ -38,7 +40,6 @@ const char *put_continue =
     "HTTP/1.1 100 Continue\n\n";
 
 // Global variables
-const int buf_size = 16000;
 char buffer[buf_size] = {0};
 char get_buff[buf_size];
 char file_buff[buf_size]; 
@@ -117,31 +118,31 @@ int *get_function(int cl, const char *target) {
 /*-----------------------------  PUT FUNCTION  -------------------------------*/
 
 int *put_function(int cl, int fd, int putread, int bytes_left, 
-        const char *target, int content_len, int buf_size, char *file_buff) {
+        const char *target, int content_len, int buf_size1, char *file_buff) {
     if (fd == -1) {
         write(cl, internal_server_error, strlen(internal_server_error));
         close(fd);
     }
     else {
         // if content length fits in a single buffer
-        if (content_len < buf_size) {
+        if (content_len < buf_size1) {
             // read then write 
             putread = read(cl, file_buff, content_len);
             write(fd, file_buff, putread);
         }
         else {
             // do the first put read
-            putread = read(cl, file_buff, buf_size);
+            putread = read(cl, file_buff, buf_size1);
             write(fd, file_buff, putread);
-            bytes_left = content_len - buf_size;
+            bytes_left = content_len - buf_size1;
             // write from full buffers
-            while(bytes_left >= buf_size) {
-                putread = read(cl, file_buff, buf_size);
+            while(bytes_left >= buf_size1) {
+                putread = read(cl, file_buff, buf_size1);
                 write(fd, file_buff, putread);
-                bytes_left = bytes_left - buf_size;
+                bytes_left = bytes_left - buf_size1;
             }
             // write the last bit
-            putread = read(cl, file_buff, buf_size);
+            putread = read(cl, file_buff, buf_size1);
             write(fd, file_buff, putread);
         }
         write(cl, created, strlen(created));
@@ -423,7 +424,10 @@ int main (int argc, char *argv[]) {
         PORT_NUMBER = atoi(argv[4]);
     }
 
-    *request_buff = (int)malloc(nthread);
+    *request_buff = (int)malloc(sizeof(int)*nthread);
+    for (int i=0; i<sizeof(*request_buff/sizeof(request_buff[i])); i++){
+       request_buff[i] = -1;
+    }
     //int n_available[nthread] = {0};
     //int n_available[nthreads] = {0};
     // Create threads
