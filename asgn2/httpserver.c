@@ -23,6 +23,11 @@
 
 #define buf_size 16000
 
+// global variables for setting up a socket
+int PORT_NUMBER, sock;
+char *SERVER_NAME_STRING, LOG_FILE;
+struct sockaddr_in addr;
+
 // Status codes and messages
 const char *ok = 
     "HTTP/1.1 200 OK\nContent-length: 0\r\n\r\n";
@@ -381,6 +386,27 @@ void *dispatcher(void *args){
         *thrd_ptr = request_buff[out];
         printf("thread contains:\n%d\n", &thrd_ptr);
         if (thrd_ptr != NULL){
+            // Create socket for server
+            int enable = 1;
+            setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+            if (bind(sock, (struct sockaddr *)&addr, sizeof(addr))<0) {
+                perror("In bind");
+                exit(EXIT_FAILURE);
+            }
+            // Listen to socket to see if there is a connection
+            listen(sock, 0);
+
+            //int open_socket = 1;
+            while (1){
+                printf("in accept\n");
+                cl = accept(sock, NULL, NULL);
+                if (cl<0) {
+                    perror("In accept");
+                    exit(EXIT_FAILURE);
+                }
+
+            }
+
             printf("about to parse\n");
             if ((valread = read(*thrd_ptr, buffer, sizeof(buffer) - 1)) == -1) {
                 perror("In read");
@@ -403,8 +429,6 @@ void *dispatcher(void *args){
 /*----------------------------------  MAIN  ----------------------------------*/
 
 int main (int argc, char *argv[]) {
-    int PORT_NUMBER;
-    char *SERVER_NAME_STRING, LOG_FILE;
     if ((argv[1] == NULL && argv[2] == NULL) || argv[1] == NULL) {
         fprintf(stderr, "Request is missing required `worker thread` header\n");
         exit (1);
@@ -467,40 +491,40 @@ int main (int argc, char *argv[]) {
 
     // Create sockaddr_in
     struct hostent *hent = gethostbyname(SERVER_NAME_STRING);
-    struct sockaddr_in addr;
+    //struct sockaddr_in addr;
     memcpy(&addr.sin_addr.s_addr, hent->h_addr, hent->h_length);
     addr.sin_port = htons(PORT_NUMBER);
     addr.sin_family = AF_INET;
 
     // Create socket
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == 0) {
         perror("In socket");
         exit(EXIT_FAILURE);
     }
+    queue(sock);
 
-    // Create socket for server
-    int enable = 1;
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr))<0) {
-        perror("In bind");
-        exit(EXIT_FAILURE);
-    }
-    // Listen to socket to see if there is a connection
-    listen(sock, 0);
+    // // Create socket for server
+    // int enable = 1;
+    // setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+    // if (bind(sock, (struct sockaddr *)&addr, sizeof(addr))<0) {
+    //     perror("In bind");
+    //     exit(EXIT_FAILURE);
+    // }
+    // // Listen to socket to see if there is a connection
+    // listen(sock, 0);
 
-    //int open_socket = 1;
+    // //int open_socket = 1;
 
-    while (1){
-        printf("in accept\n");
-        cl = accept(sock, NULL, NULL);
-        if (cl<0) {
-            perror("In accept");
-            exit(EXIT_FAILURE);
-        }
-        queue(cl);
+    // while (1){
+    //     printf("in accept\n");
+    //     cl = accept(sock, NULL, NULL);
+    //     if (cl<0) {
+    //         perror("In accept");
+    //         exit(EXIT_FAILURE);
+    //     }
 
-    }
+    // }
     int j = 0;
     while (j < nthread){
         pthread_join(tid[j], NULL);
