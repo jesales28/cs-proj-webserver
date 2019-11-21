@@ -157,8 +157,8 @@ int *parse(int cl, char buffer) {
     // try with strchr from 
     // https://stackoverflow.com
     char *start, *end;
-    char *line = malloc(buf_size);
-    char *putline = malloc(buf_size);
+    char *line = (char*)malloc(buf_size);
+    char *putline = (char*)malloc(buf_size);
     int line_size = 0;
         
     int filter_request = 1;
@@ -306,7 +306,7 @@ void *queue(int cl, char buffer1[]){
         //}
         // printf("%s\n", &request_buff[0]);
         while (req_written == 0){
-            if (&request_buff[in] != NULL) {
+            if (request_buff[in] != NULL) {
                 printf("in here\n");
                 in = (in + 1) % n;
             }
