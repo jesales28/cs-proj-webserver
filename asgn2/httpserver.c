@@ -337,7 +337,7 @@ void *queue(int cl){
                 //printf("in here\n");
                 in = (in + 1) % n;
             }
-            printf("%d\n%s\n", in, &request_buff[in]);
+            printf("%d\n%d\n", in, &request_buff[in]);
             //memmove(&request_buff[in], cl, 1);
             request_buff[in] = cl;
             //printf("At index: %d\nWritten to queue:\n%s\n", in, &request_buff[in]);
@@ -379,7 +379,7 @@ void *dispatcher(void *args){
         }
         //memmove(thrd_ptr, &request_buff[out], strlen(&request_buff[out]));
         *thrd_ptr = request_buff[out];
-        printf("thread contains:\n%s\n", &thrd_ptr);
+        printf("thread contains:\n%d\n", &thrd_ptr);
         if (thrd_ptr != NULL){
             printf("about to parse\n");
             if ((valread = read(*thrd_ptr, buffer, sizeof(buffer) - 1)) == -1) {
