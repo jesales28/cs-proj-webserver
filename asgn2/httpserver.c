@@ -400,7 +400,7 @@ void *dispatcher(void *args){
             while (1){
                 printf("in accept\n");
                 *thrd_ptr = accept(sock, NULL, NULL);
-                if (cl<0) {
+                if (*thrd_ptr<0) {
                     perror("In accept");
                     exit(EXIT_FAILURE);
                 }
