@@ -399,7 +399,7 @@ void *dispatcher(void *args){
             //int open_socket = 1;
             while (1){
                 printf("in accept\n");
-                cl = accept(sock, NULL, NULL);
+                *thrd_ptr = accept(sock, NULL, NULL);
                 if (cl<0) {
                     perror("In accept");
                     exit(EXIT_FAILURE);
