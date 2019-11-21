@@ -437,14 +437,17 @@ int main (int argc, char *argv[]) {
 
     int i = 0;
     int error;
-    error = pthread_create(&tid[i], NULL, &dispatcher, (void*)&tid[i]); 
-    if (error != 0){
-        printf("\nThread can't be created :[%s]\n", strerror(error)); 
-    } 
-    else {
-	    printf("\nThread created\n");
+    while(i<nthread){
+        error = pthread_create(&tid[i], NULL, &dispatcher, (void*)&tid[i]); 
+        if (error != 0){
+            printf("\nThread can't be created :[%s]\n", strerror(error)); 
+        } 
+        else {
+	        printf("\nThread created\n");
+        }
+        i++; 
     }
-    i++; 
+    
     
     req_avail = 0;
 
