@@ -159,8 +159,8 @@ int *parse(int cl) {
 
     //****************
     //  try from https://stackoverflow.com
-    pthread_mutex_lock(&mutex);
-    pthread_cond_signal(&begin);
+    //pthread_mutex_lock(&mutex);
+    //pthread_cond_signal(&begin);
     if ((valread = read(cl, buffer, sizeof(buffer) - 1)) == -1) {
         perror("In read");
         exit(EXIT_FAILURE);
@@ -309,7 +309,7 @@ int *parse(int cl) {
         }
         close(cl);
     }
-    pthread_mutex_unlock(&mutex);
+    //pthread_mutex_unlock(&mutex);
     return 0;
 }
 
@@ -359,7 +359,6 @@ void *dispatcher(void *args){
     int out = 0;
     char *thrd_ptr = (char *)args;
     while(1){
-        pthread_cond_wait(&begin, &mutex);
         pthread_mutex_lock(&mutex);
         if (req_avail == 0){
             printf("threads waiting: %d\n", waiting_threads);
