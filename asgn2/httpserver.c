@@ -438,16 +438,15 @@ int main (int argc, char *argv[]) {
 
     int i = 0;
     int error;
-    while(i<nthread) {
-        error = pthread_create(&tid[i], NULL, &dispatcher, (void*)&tid[i]); 
-        if (error != 0){
-            printf("\nThread can't be created :[%s]\n", strerror(error)); 
-        } 
-        else {
-	        printf("\nThread created\n");
-        }
-        i++; 
+    error = pthread_create(&tid[i], NULL, &dispatcher, (void*)&tid[i]); 
+    if (error != 0){
+        printf("\nThread can't be created :[%s]\n", strerror(error)); 
+    } 
+    else {
+	    printf("\nThread created\n");
     }
+    i++; 
+    
     req_avail = 0;
 
     // Create sockaddr_in
