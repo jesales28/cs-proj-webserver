@@ -153,24 +153,24 @@ int *put_function(int cl, int fd, int putread, int bytes_left,
 
 /*----------------------------  PARSE FUNCTION  ------------------------------*/
 
-int *parse(int cl) {
+int *parse(int cl, char buffer[]) {
     // Read to get header
     //valread = read(cl, buffer, buf_size); 
 
     //****************
     //  try from https://stackoverflow.com
-    //pthread_mutex_lock(&mutex);
-    //pthread_cond_signal(&begin);
-    if ((valread = read(cl, buffer, sizeof(buffer) - 1)) == -1) {
-        perror("In read");
-        exit(EXIT_FAILURE);
-    }
+    pthread_mutex_lock(&mutex);
+    pthread_cond_signal(&begin);
+    // if ((valread = read(cl, buffer, sizeof(buffer) - 1)) == -1) {
+    //     perror("In read");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    if (valread == 13){
-        perror("Corrupt File");
-        exit(EXIT_FAILURE);
-    }
-    buffer[valread] = '\0';
+    // if (valread == 13){
+    //     perror("Corrupt File");
+    //     exit(EXIT_FAILURE);
+    // }
+    // buffer[valread] = '\0';
 
     char line_buffer[256];
        
@@ -309,7 +309,7 @@ int *parse(int cl) {
         }
         close(cl);
     }
-    //pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&mutex);
     return 0;
 }
 
@@ -382,7 +382,16 @@ void *dispatcher(void *args){
         printf("thread contains:\n%s\n", &thrd_ptr);
         if (thrd_ptr != NULL){
             printf("about to parse\n");
-            parse(*thrd_ptr);
+            if ((valread = read(*thrd_ptr, buffer, sizeof(buffer) - 1)) == -1) {
+                perror("In read");
+                exit(EXIT_FAILURE);
+            }
+            if (valread == 13){
+                perror("Corrupt File");
+                exit(EXIT_FAILURE);
+            }
+            buffer[valread] = '\0';
+            parse(*thrd_ptr, buffer);
         }
         n_in_use -= 1;
         pthread_cond_signal(&empty);
