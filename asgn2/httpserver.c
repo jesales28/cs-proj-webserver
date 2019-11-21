@@ -494,6 +494,10 @@ int main (int argc, char *argv[]) {
     while (1){
         printf("in accept\n");
         cl = accept(sock, NULL, NULL);
+        if (cl<0) {
+            perror("In accept");
+            exit(EXIT_FAILURE);
+        }
         queue(cl);
 
     }
