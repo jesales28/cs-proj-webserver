@@ -159,6 +159,7 @@ int *parse(int cl) {
 
     //****************
     //  try from https://stackoverflow.com
+    pthread_mutex_lock(&mutex);
     pthread_cond_signal(&begin);
     if ((valread = read(cl, buffer, sizeof(buffer) - 1)) == -1) {
         perror("In read");
@@ -308,6 +309,7 @@ int *parse(int cl) {
         }
         close(cl);
     }
+    pthread_mutex_unlock(&mutex);
     return 0;
 }
 
