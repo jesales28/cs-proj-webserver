@@ -1,9 +1,9 @@
 # Julia Sales
 # jesales
-# Makefile for httpserver.cpp
+# Makefile for httpserver.c
 
-httpserver : httpserver.cpp
-	clang++ -o httpserver httpserver.cpp
+httpserver : httpserver.c
+	gcc -o httpserver httpserver.c
 clean :
 	rm -f httpserver
 
