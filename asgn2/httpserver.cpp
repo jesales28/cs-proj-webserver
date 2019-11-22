@@ -306,7 +306,7 @@ void *queue(int cl, char buffer1[]){
         //}
         // printf("%s\n", &request_buff[0]);
         while (req_written == 0){
-            if (&request_buff[in] != NULL) {
+            if (request_buff[in] != NULL) {
                 printf("in here\n");
                 in = (in + 1) % n;
             }
