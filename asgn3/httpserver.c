@@ -5,6 +5,7 @@
 // RESOURCES: piazza, stack overflow, gnu.com, class, and man pages
 // as well as referenced medium.com <- helped with setting up the socket
 // it was also similar/same code from section. Also used hw1 pseudo
+// used cityhash by google from google's github: https://github.com/google/cityhash/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +23,23 @@
 #include <ctype.h>
 
 #define BUFFSIZE 16000
+#define SIZE 8000
 #define MAX 20
+
+struct bucket
+{
+    char value;
+    char key;
+};
+
+struct bucket* hashArray[SIZE];
+struct bucket* dummyItem;
+struct bucket* item;
+                        
+int hashCode(int key) 
+{
+    return key % SIZE;
+}
 
 // logging variables
 int offset = 0;
@@ -481,6 +498,7 @@ void *worker()
     char request_method[3];
     char request_uri[28];
     char request_type[15];
+    char new_uri[100];
     int content_len = 0;
 
     char slash[] = "/";
@@ -594,7 +612,7 @@ void *worker()
 
                     /*__________________  PUT REQUEST FOUND __________________*/
 
-                    else if ( write_line_mode == 0 && (strncmp(line, "PUT", 3)) == 0 )
+                    if ( write_line_mode == 0 && (strncmp(line, "PUT", 3)) == 0 )
                     {
                         // PUT request line found
                         sscanf(line, "%s %s %s", request_method, request_uri, request_type);
@@ -693,6 +711,45 @@ void *worker()
                         }
                     }
                     // put another else if for ALIAS
+                    else if ( write_line_mode == 0 && (strncmp(line, "PATCH", 5)) == 0 )
+                    {
+                        // PATCH request line found
+                        sscanf(line, "%s %s %s", request_method, new_uri, request_type);
+                        
+                        // look for the content length in the next 10 lines
+                        for (int i = 0; i<10 && (content_len == 0); i++)
+                        {
+                            line = strsep(&process_buffer, "\n");
+                            if ( (strncmp(line, "Content-Length:", 15)) == 0 )
+                            {
+                                sscanf(line, "Content-Length: %d", &content_len);
+                            }
+                        }
+                        printf(" found PATCH request with new URI target: %s\n", new_uri);      
+                        printf("    and content length: %d\n", content_len);
+
+                        // make sure we found content_len
+                        if ( content_len < 0 ) 
+                        {
+                            write(w_cl, bad_request, strlen(bad_request));
+                            
+                        }
+                        else
+                        {
+                            // look for continue or blank with next line
+                            line = strsep(&process_buffer, "\n");
+                            if ( (strncmp(line, "Expect: 100-continue", 20)) == 0 )
+                            {
+                                write(w_cl, put_continue, strlen(put_continue));
+                            }
+                            else
+                            {
+                                
+                            }   
+                        }
+
+
+                    }
                 }
 
                 // we reached the end of buffer, make sure we are at the end of the stream
