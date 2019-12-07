@@ -26,21 +26,6 @@
 #define SIZE 8000
 #define MAX 20
 
-struct bucket
-{
-    char value;
-    char key;
-};
-
-struct bucket* hashArray[SIZE];
-struct bucket* dummyItem;
-struct bucket* item;
-                        
-int hashCode(int key) 
-{
-    return key % SIZE;
-}
-
 // logging variables
 int offset = 0;
 int log_enable;
@@ -87,6 +72,7 @@ void get_function(int con_l, char *r_target, char *r_method, char *r_http);
 // global variables for setting up a socket
 int PORT_NUMBER;
 char *SERVER_NAME_STRING, *LOG_FILE, *ALIAS_FILE;
+struct dispatch_params *d_par;
 
 // Status codes and messages
 char *ok = 
@@ -238,7 +224,7 @@ int main(int argc, char **argv)
     // start worker threads
     for (int i = 1 ; i <= nthreads; i++)
     {
-        pthread_create(&worker_id[i], NULL, worker, NULL);
+        pthread_create(&worker_id[i], NULL, &worker, NULL);
     }
     // main runs until pthread_join completes (which is never)
     int d_rc = pthread_join(dispatch_thread, NULL);
@@ -460,7 +446,8 @@ int queue_pop()
 void *dispatcher(void *d_params)
 {
     printf("dispatcher: starting\n");
-    struct dispatch_params *d_par = *d_params;
+    //struct dispatch_params *d_par;
+    *d_par = d_params;
 
     int sock = create_socket(d_par->bindaddr, d_par->port); 
     listen(sock, 10);
