@@ -300,7 +300,7 @@ void get_function(int con_l, char *r_target, char *r_method, char *r_http)
     {
         file_read = read(fd, file_buff, BUFFSIZE);
         stat(r_target, &st);
-        sprintf(resp_buff, "HTTP/1.1 200 OK\nContent-length: %lld\r\n\r\n", st.st_size);
+        sprintf(resp_buff, "HTTP/1.1 200 OK\nContent-length: %ld\r\n\r\n", st.st_size);
         write(con_l, resp_buff, strlen(resp_buff));
         // if handling a large file
         while (file_read >= BUFFSIZE)
@@ -460,7 +460,7 @@ int queue_pop()
 void *dispatcher(void *d_params)
 {
     printf("dispatcher: starting\n");
-    struct dispatch_params *d_par = d_params;
+    struct dispatch_params *d_par = *d_params;
 
     int sock = create_socket(d_par->bindaddr, d_par->port); 
     listen(sock, 10);
@@ -744,7 +744,7 @@ void *worker()
                             }
                             else
                             {
-                                
+
                             }   
                         }
 
