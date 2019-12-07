@@ -50,7 +50,7 @@ struct dispatch_params
 
 // thread functions
 void * dispatcher(void *dparams);
-static void * worker();
+void * worker(void *arg);
 
 // global locks
 pthread_mutex_t queue_lock;
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
     // start worker threads
     for (int i = 1 ; i <= nthreads; i++)
     {
-        pthread_create(&worker_id[i], NULL, worker, NULL);
+        pthread_create(&worker_id[i], NULL, &worker, NULL);
     }
     // main runs until pthread_join completes (which is never)
     int d_rc = pthread_join(dispatch_thread, NULL);
@@ -285,7 +285,7 @@ void get_function(int con_l, char *r_target, char *r_method, char *r_http)
     {
         file_read = read(fd, file_buff, BUFFSIZE);
         stat(r_target, &st);
-        sprintf(resp_buff, "HTTP/1.1 200 OK\nContent-length: %lld\r\n\r\n", st.st_size);
+        sprintf(resp_buff, "HTTP/1.1 200 OK\nContent-length: %ld\r\n\r\n", st.st_size);
         write(con_l, resp_buff, strlen(resp_buff));
         // if handling a large file
         while (file_read >= BUFFSIZE)
@@ -445,7 +445,7 @@ int queue_pop()
 void *dispatcher(void *d_params)
 {
     printf("dispatcher: starting\n");
-    struct dispatch_params *d_par = d_params;
+    struct dispatch_params *d_par = (struct dispatch_params*)d_params;
 
     int sock = create_socket(d_par->bindaddr, d_par->port); 
     listen(sock, 10);
@@ -469,7 +469,7 @@ void *dispatcher(void *d_params)
 
 /*----------------------------  WORKER FUNCTION  -----------------------------*/
 
-static void *worker()
+void *worker(void *arg)
 {
     pthread_mutex_lock(&worker_lock);
     int myid = w_count;
@@ -755,4 +755,5 @@ static void *worker()
         }
         close(w_cl);
     }
+    return 0;
 }
