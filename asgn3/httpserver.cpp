@@ -24,7 +24,7 @@
 
 #define BUFFSIZE 16000
 #define SIZE 8000
-#define MAX 20
+#define MAX 100
 
 // logging variables
 int offset = 0;
@@ -74,19 +74,19 @@ int PORT_NUMBER;
 char *SERVER_NAME_STRING, *LOG_FILE, *ALIAS_FILE;
 
 // Status codes and messages
-char *ok = 
+const char *ok = 
     "HTTP/1.1 200 OK\nContent-length: 0\r\n\r\n";
-char *created = 
+const char *created = 
     "HTTP/1.1 201 Created\nContent-length: 0\r\n\r\n";
-char *bad_request = 
+const char *bad_request = 
     "HTTP/1.1 400 Bad Request\nContent-length: 0\r\n\r\n";
-char *forbidden = 
+const char *forbidden = 
     "HTTP/1.1 403 Forbidden\nContent-length: 0\r\n\r\n";
-char *file_not_found = 
+const char *file_not_found = 
     "HTTP/1.1 404 Not Found\nContent-length: 0\r\n\r\n";
-char *internal_server_error = 
+const char *internal_server_error = 
     "HTTP/1.1 500 Internal Server Error\nContent-length: 0\r\n";
-char *put_continue = 
+const char *put_continue = 
     "HTTP/1.1 100 Continue\n\n";
 
 // print USAGE function
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
             case 'N':
                 nthreads = atoi(optarg);
                 // make sure nthreads is greater than 4
-                if (nthreads < 4)
+                if (nthreads < 1)
                 {
                     perror("Error: Number of threads must be 4 or greater\n");
                     exit(EXIT_FAILURE); 
@@ -139,12 +139,11 @@ int main(int argc, char **argv)
                 break;
             case 'a':
                 ALIAS_FILE = optarg;
-                if (access(ALIAS_FILE, F_OK) == 0)
-                {
-                    map_fd = open(ALIAS_FILE, O_RDONLY);
+                // only need one open
+                map_fd = open(ALIAS_FILE, O_RDWR | O_CREAT | O_APPEND, 0664);
                     if (map_fd == -1)
                     {
-                        perror("Mapping file cannot be opened");
+                        perror("Mapping file cannot be created");
                         exit(EXIT_FAILURE);
                     }
                     map = read(map_fd, map_line, sizeof(map_line));
@@ -153,27 +152,20 @@ int main(int argc, char **argv)
                         perror("Mapping file cannot be read");
                         exit(EXIT_FAILURE);
                     }
-                    sscanf(map_line, "%s", magic_num);
-                    printf("magic num: %s\n", magic_num);
-                    if (atoi(magic_num) != 1)
-                    {
-                        perror("Magic Number invalid");
-                        exit(EXIT_FAILURE);
-                    }
                     else
                     {
-                        printf("yay\n");
+                        sscanf(map_line, "%s", magic_num);
+                        printf("magic num: %s\n", magic_num);
+                        if (atoi(magic_num) != 1)
+                        {
+                            perror("Magic Number invalid");
+                            exit(EXIT_FAILURE);
+                        }
+                        else
+                        {
+                            printf("Alias file: %s\n", ALIAS_FILE);
+                        }
                     }
-                }
-                else
-                {
-                    map_fd = open(ALIAS_FILE, O_RDWR | O_CREAT | O_APPEND, 0664);
-                    if (map_fd == -1)
-                    {
-                        perror("Mapping file cannot be created");
-                        exit(EXIT_FAILURE);
-                    }
-                }
                 break;            
             default:
                 if (ALIAS_FILE == NULL)
@@ -183,6 +175,7 @@ int main(int argc, char **argv)
                 }
                 print_usage();
                 exit(EXIT_FAILURE);
+            
         }
     }
 
@@ -279,13 +272,13 @@ void get_function(int con_l, char *r_target, char *r_method, char *r_http)
     if (fd == -1)
     {
         write(con_l, file_not_found, strlen(file_not_found));
-        logging(r_method, r_target, r_http, 0, NULL, file_not_found, LOG_FILE);
+        //logging(r_method, r_target, r_http, 0, NULL, file_not_found, LOG_FILE);
     }
     else if (fd != -1)
     {
         file_read = read(fd, file_buff, BUFFSIZE);
         stat(r_target, &st);
-        sprintf(resp_buff, "HTTP/1.1 200 OK\nContent-length: %ld\r\n\r\n", st.st_size);
+        sprintf(resp_buff, "HTTP/1.1 200 OK\nContent-length: %lld\r\n\r\n", st.st_size);
         write(con_l, resp_buff, strlen(resp_buff));
         // if handling a large file
         while (file_read >= BUFFSIZE)
@@ -294,12 +287,12 @@ void get_function(int con_l, char *r_target, char *r_method, char *r_http)
             file_read = read(fd, file_buff, BUFFSIZE);
         }
         write(con_l, file_buff, file_read);
-        logging(r_method, r_target, r_http, st.st_size, file_buff, ok, LOG_FILE);
+        //logging(r_method, r_target, r_http, st.st_size, file_buff, ok, LOG_FILE);
     }    
     else
     {
         write(con_l, &internal_server_error, strlen(internal_server_error));
-        logging(r_method, r_target, r_http, 0, NULL, internal_server_error, LOG_FILE);
+        //logging(r_method, r_target, r_http, 0, NULL, internal_server_error, LOG_FILE);
     }
     close(fd);
 
@@ -579,14 +572,14 @@ void *worker(void *arg)
                         if ( strstr(request_uri, slash) != NULL )
                         {
                             write(w_cl, forbidden, strlen(forbidden));
-                            logging(request_method, request_uri, request_type, 0, NULL, forbidden, LOG_FILE);
+                            //logging(request_method, request_uri, request_type, 0, NULL, forbidden, LOG_FILE);
                         }
                         // If target file name if not 27 ascii characters
                         // Print 400 error message
                         if ( strlen(&request_uri[0]) != 27 )
                         {
                             write(w_cl, bad_request, strlen(bad_request));
-                            logging(request_method, request_uri, request_type, 0, NULL, bad_request, LOG_FILE);
+                            //logging(request_method, request_uri, request_type, 0, NULL, bad_request, LOG_FILE);
                         }
                         else
                         {
@@ -622,21 +615,21 @@ void *worker(void *arg)
                         if ( content_len < 0 ) 
                         {
                             write(w_cl, bad_request, strlen(bad_request));
-                            logging(request_method, request_uri, request_type, 0, NULL, bad_request, LOG_FILE);
+                            //logging(request_method, request_uri, request_type, 0, NULL, bad_request, LOG_FILE);
                         }
                         // If "/" then curl is called without target
                         // Print 403 message because "/" are not allowed
                         if ( strstr(request_uri, slash ) != NULL )
                         {
                             write(w_cl, forbidden, strlen(forbidden));
-                            logging(request_method, request_uri, request_type, 0, NULL, forbidden, LOG_FILE);
+                            //logging(request_method, request_uri, request_type, 0, NULL, forbidden, LOG_FILE);
                         }
                         // If target file name if not 27 ascii characters
                         // Print 400 error message
                         if ( strlen(&request_uri[0]) != 27 )
                         {
                             write(w_cl, bad_request, strlen(bad_request));
-                            logging(request_method, request_uri, request_type, 0, NULL, bad_request, LOG_FILE);
+                            //logging(request_method, request_uri, request_type, 0, NULL, bad_request, LOG_FILE);
                         } 
                         else 
                         {
@@ -647,7 +640,7 @@ void *worker(void *arg)
                             {
                                 write(w_cl, internal_server_error, 
                                                 strlen(internal_server_error));
-                                logging(request_method, request_uri, request_type, 0, NULL, internal_server_error, LOG_FILE);
+                                //logging(request_method, request_uri, request_type, 0, NULL, internal_server_error, LOG_FILE);
                             }
                             // keep track of how many bytes to write
                             putbytes_left = content_len;
@@ -680,7 +673,7 @@ void *worker(void *arg)
                                 }
                                 close(file_d);
                                 write(w_cl, created, strlen(created));
-                                logging(request_method, request_uri, request_type, content_len, put_buff, created, LOG_FILE); 
+                                //logging(request_method, request_uri, request_type, content_len, put_buff, created, LOG_FILE); 
                                 content_len = 0;
 
                             } 
