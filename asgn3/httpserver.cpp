@@ -89,15 +89,6 @@ const char *internal_server_error =
 const char *put_continue = 
     "HTTP/1.1 100 Continue\n\n";
 
-// print USAGE function
-void print_usage()
-{
-    printf("USAGE: httpserver [-N <thread_count>] [-l <log_file>] <listen_address> <port>\n");
-    printf("    optional args:\n");
-    printf("        -N <thread_count>   # default: 4\n");
-    printf("        -l <log_file>       # default: logging disabled\n");
-}
-
 /*----------------------------------  MAIN  ----------------------------------*/
 
 int main(int argc, char **argv) 
@@ -173,7 +164,6 @@ int main(int argc, char **argv)
                     perror("Alias file does not exist");
                     exit(EXIT_FAILURE);
                 }
-                print_usage();
                 exit(EXIT_FAILURE);
             
         }
@@ -183,17 +173,11 @@ int main(int argc, char **argv)
     if (argv[optind] == NULL || argv[optind + 1] == NULL) 
     {
         perror("Error: Missing server name and/or port args.\n");
-        print_usage();
         exit(EXIT_FAILURE);
     }
 
     SERVER_NAME_STRING = argv[optind];
     PORT_NUMBER = atoi(argv[optind+1]);
-
-    printf("Results:\nnumber of threads: %d\n", nthreads);
-    printf("logfile name: %s\n", LOG_FILE);
-    
-    printf("bind address: %s:%d\n", SERVER_NAME_STRING, PORT_NUMBER);
 
     front = back = 0; 
     // init threads
@@ -267,8 +251,6 @@ void get_function(int con_l, char *r_target, char *r_method, char *r_http)
     struct stat st;
     int fd = open(r_target, O_RDONLY);
 
-    printf("  request_get function for: %s\n", r_target);
-
     if (fd == -1)
     {
         write(con_l, file_not_found, strlen(file_not_found));
@@ -302,10 +284,8 @@ void get_function(int con_l, char *r_target, char *r_method, char *r_http)
 
 void logging(char *request, char *target_file, char *http_type, int cont_len, char *buff, char *stat_code, char *log_file_name)
 {
-    printf("log enable: %d\n", log_enable);
     if (log_enable == 0)
     {
-        printf("log is not enabled\n");
         return;
     }
     else
@@ -318,7 +298,6 @@ void logging(char *request, char *target_file, char *http_type, int cont_len, ch
         memset(first_buff, 0, sizeof(first_buff));
         pthread_mutex_unlock(&mem_lock);
 
-        printf("here\n");
         // char *hello = "Hello world\n";
         // pwrite(*log_file_name, hello, strlen(hello), 15);
         // use locks to lock offset, need to change offset
@@ -358,10 +337,8 @@ void logging(char *request, char *target_file, char *http_type, int cont_len, ch
             }
             sprintf(log_file_name + strlen(log_file_name), "========\n");
         }
-        printf("got outside bad_req log\n");
         if (strstr(stat_code, bad_request) == 0)
         {
-            printf("inside bad_request log\n");
             sprintf(first_buff, "FAIL: %s %s %s --- response 400\n", request, target_file, http_type);
             pwrite(*log_file_name, first_buff, strlen(first_buff), prev_offset);
             sprintf(log_file_name + strlen(log_file_name), "========\n");
@@ -397,7 +374,6 @@ void queue_insert(int value)
     if (back == MAX)
     {
         // queue is full
-        printf("Queue size:%d is full\n", MAX);
         return;
     }
     else
@@ -417,7 +393,6 @@ int queue_pop()
     int pop_value;
     // if queue is empty
     if (front == back) {
-        printf("Queue is empty\n");
     }
     else
     {
@@ -437,7 +412,6 @@ int queue_pop()
 //  when connections arrive, they are placed into the queue
 void *dispatcher(void *d_params)
 {
-    printf("dispatcher: starting\n");
     struct dispatch_params *d_par = (struct dispatch_params*)d_params;
 
     int sock = create_socket(d_par->bindaddr, d_par->port); 
@@ -448,7 +422,6 @@ void *dispatcher(void *d_params)
         // waits until a client connection is established
         int cl = accept(sock, NULL, NULL); 
 
-        printf("dispatcher: -- client connection established --\n");
         // add connection to the queue
         // lock the queue - so we can take control and insert
         pthread_mutex_lock(&queue_lock);
@@ -467,7 +440,6 @@ void *worker(void *arg)
     pthread_mutex_lock(&worker_lock);
     int myid = w_count;
     w_count++;
-    printf("worker[%d] started\n", myid);
     pthread_mutex_unlock(&worker_lock);
 
     char buffer[BUFFSIZE];
@@ -501,15 +473,12 @@ void *worker(void *arg)
         pthread_mutex_unlock(&worker_lock);
 
         //  process connection 
-        printf("worker[%d]: processing connection.\n", myid); 
         int valread;
         if ((valread = read(w_cl, buffer, sizeof(buffer) -1)) == -1) 
         {
             perror("In read");
             continue;
         }
-        printf("worker[%d]: read_buffer is - \n%s", myid, buffer);
-        printf("worker[%d]: ------------------------- \n", myid);
 
         char *line, *process_buffer, *line_to_write;
 
@@ -538,7 +507,6 @@ void *worker(void *arg)
                                 line_to_write = strdup(line);
                                 wrote = write(file_d, strcat(line_to_write, "\r\n"), strlen(line_to_write));
                                 putbytes_left = putbytes_left - wrote;    
-                                printf("     wrote line: %s", line_to_write);
                             }
                             else
                             {
@@ -582,8 +550,7 @@ void *worker(void *arg)
                             //logging(request_method, request_uri, request_type, 0, NULL, bad_request, LOG_FILE);
                         }
                         else
-                        {
-                            printf(" found GET request with URI target: %s\n", request_uri);           
+                        {         
                             get_function(w_cl, request_uri, request_method, request_type);
                         }
                     }
@@ -607,9 +574,7 @@ void *worker(void *arg)
                             {
                                 sscanf(line, "Content-Length: %d", &content_len);
                             }
-                        }
-                        printf(" found PUT request with URI target: %s\n", request_uri);      
-                        printf("    and content length: %d\n", content_len);      
+                        }     
         
                         // make sure we found content_len
                         if ( content_len < 0 ) 
@@ -650,18 +615,15 @@ void *worker(void *arg)
                             if ( (strncmp(line, "Expect: 100-continue", 20)) == 0 )
                             {
                                 // signal client to continue and write data
-                                printf("  PUT: %s content length: %d\n", request_uri, content_len);
                                 write(w_cl, put_continue, strlen(put_continue));
                                 // read stream and write to file
                                 putread = read(w_cl, put_buff, sizeof(put_buff)); 
-                                printf("   read in %d bytes\n", putread);
 
                                 // write to file
                                 wrote = write(file_d, put_buff, putread);
                                 putbytes_left = putbytes_left - wrote;
+                                
                                 // keep writing if stream is larger than put_buff
-                                printf("  wrote %d bytes,  bytes left: %d\n", wrote, putbytes_left);
-
                                 while (putbytes_left > 0)
                                 {
                                     // clear the put_buff cache before filling
@@ -669,7 +631,6 @@ void *worker(void *arg)
                                     putread = read(w_cl, put_buff, sizeof(put_buff));    
                                     wrote = write(file_d, put_buff, putread);
                                     putbytes_left = putbytes_left - wrote;
-                                    printf("  wrote %d bytes,  bytes left: %d\n", wrote, putbytes_left);
                                 }
                                 close(file_d);
                                 write(w_cl, created, strlen(created));
@@ -680,8 +641,6 @@ void *worker(void *arg)
                             // send in line
                             else  //if ( line[0] == '\n' || line[0] == 0x00 )
                             {
-                                printf("  PUT: %s content length: %d\n", request_uri, content_len);
-                                printf("  to read from netcat inline\n");
                                 write_line_mode = 1;
 
                             } 
@@ -703,9 +662,6 @@ void *worker(void *arg)
                                 sscanf(line, "Content-Length: %d", &content_len);
                             }
                         }
-                        printf(" found PATCH request with new URI target: %s\n", new_uri);      
-                        printf("    and content length: %d\n", content_len);
-
                         // make sure we found content_len
                         if ( content_len < 0 ) 
                         {
@@ -732,11 +688,8 @@ void *worker(void *arg)
 
                 // we reached the end of buffer, make sure we are at the end of the stream
                 // clear buffer to read next set of data
-                printf ("  buffer empty, checking if more to stream\n");
                 memset(buffer, 0, sizeof(buffer));
                 valread = read(w_cl, buffer, sizeof(buffer) -1); 
-                printf("  cl_read: %d\n", valread);
-
             }
     
             // session done
