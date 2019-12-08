@@ -146,15 +146,11 @@ int main(int argc, char **argv)
                     else
                     {
                         sscanf(map_line, "%s", magic_num);
-                        printf("magic num: %s\n", magic_num);
+                        //printf("magic num: %s\n", magic_num);
                         if (atoi(magic_num) != 1)
                         {
                             perror("Magic Number invalid");
                             exit(EXIT_FAILURE);
-                        }
-                        else
-                        {
-                            printf("Alias file: %s\n", ALIAS_FILE);
                         }
                     }
                 break;            
