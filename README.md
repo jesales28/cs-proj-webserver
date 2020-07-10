@@ -1,10 +1,7 @@
-# Student template for CSE 130-02, Fall 2019.
+## Web Server
 
-This template instantiates all of the assignment directories (asgn0-asgn4),
-each with a 0-byte README.md in them. It also includes a .gitignore file.
+Name: Julia Sales
+Class: Principles of Computer Systems Design
 
-## Continuous integration
-
-Continuous integration (automated testing) is done by a .gitlab-ci.yml
-file that's provided in the root directory. This is used by GitLab to
-run tests on repositories. **DO NOT MODIFY OR REMOVE THIS FILE**.
+### description
+Developed a stripped down webserver that accepts basic RESTful API calls using C. The project demonstrated client server connections, buffers with large data sets, and HTML response codes.
